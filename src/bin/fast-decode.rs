@@ -121,7 +121,7 @@ fn read_all_packets(decoder: &mut Decoder, data: &mut dyn Read, output: &mut Out
             }
             OutputMode::Json(msg) => {
                 decoder.decode_vec(packet.payload, msg)?;
-                println!("{}", &msg.text);
+                println!("{}", &msg.json);
             }
         }
         packet_count += 1;
@@ -161,7 +161,7 @@ fn read_all_messages(decoder: &mut Decoder, data: &mut dyn Read, output: &mut Ou
                 println!("{}", &msg.text);
             }
             OutputMode::Json(msg) => {
-                println!("{}", &msg.text);
+                println!("{}", &msg.json);
             }
         }
         message_count += 1;
