@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::io::{Read, Write};
 use anyhow::{Result, bail};
 
 #[derive(Debug)]
@@ -36,14 +36,30 @@ impl Packet {
             payload,
         }))
     }
+
+    pub fn write(self, output: &mut dyn Write) -> Result<()> {
+        // write length
+        let len = 5 + (self.payload.len() as u64);
+        write_var_uint(output, len)?;
+        // write seq_num + sub_channel
+        output.write_all(&[
+            (self.seq_num >> 24) as u8,
+            (self.seq_num >> 16) as u8,
+            (self.seq_num >> 8) as u8,
+            self.seq_num as u8,
+            self.sub_channel
+        ])?;
+        // write payload
+        output.write_all(&self.payload)?;
+        Ok(())
+    }
 }
 
-
-fn read_var_uint(data: &mut dyn Read) -> Result<Option<u64>> {
+fn read_var_uint(input: &mut dyn Read) -> Result<Option<u64>> {
     let mut value: u64 = 0;
 
     let mut buffer = [0; 1];
-    if let Err(_) = data.read_exact(&mut buffer) {
+    if let Err(_) = input.read_exact(&mut buffer) {
         // failed reading the first byte means we reached end of file
         return Ok(None);
     }
@@ -55,6 +71,21 @@ fn read_var_uint(data: &mut dyn Read) -> Result<Option<u64>> {
         if byte & 0x80 == 0x80 {
             return Ok(Some(value));
         }
-        data.read_exact(&mut buffer)?;
+        input.read_exact(&mut buffer)?;
     }
+}
+
+fn write_var_uint(output: &mut dyn Write, mut value: u64) -> Result<()> {
+    let mut buf: Vec<u8> = Vec::with_capacity(4);
+    buf.push(((value & 0x7f) as u8) | 0x80);
+    loop {
+        value >>= 7;
+        if value == 0 {
+            break;
+        }
+        buf.push((value & 0x7f) as u8);
+    }
+    buf.reverse();
+    output.write_all(&buf)?;
+    Ok(())
 }

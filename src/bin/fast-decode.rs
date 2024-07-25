@@ -1,6 +1,5 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader, Read, stdin};
-use std::path::{Path, PathBuf};
+use std::io::{Read, Write};
+use std::path::PathBuf;
 use std::time::SystemTime;
 
 use anyhow::{anyhow, Result};
@@ -8,6 +7,7 @@ use clap::Parser;
 use humantime::format_duration;
 use log::{error, info};
 
+use fast_tools::{get_data_reader, get_data_writer, load_templates};
 use fast_tools::message::NullMessageFactory;
 use fast_tools::packet::Packet;
 use fastlib::{Decoder, Error, JsonMessageFactory, TextMessageFactory};
@@ -18,6 +18,10 @@ struct Args {
     /// XML file with template definitions
     #[arg(short, long, value_name = "TEMPLATES")]
     templates: Option<PathBuf>,
+
+    /// Output file
+    #[arg(short, long, value_name = "TEXT_DATA_FILE")]
+    output: Option<PathBuf>,
 
     /// Quiet mode; produce no message output
     #[arg(short, long)]
@@ -55,89 +59,72 @@ enum OutputMode {
 }
 
 fn decode(args: Args) -> Result<()> {
-    let mut decoder = load_templates(args.templates.as_deref())?;
-    let mut data = get_data_reader(args.data.as_deref())?;
+    let mut decoder = Decoder::new_from_xml(
+        &load_templates(args.templates.as_deref())?
+    )?;
+    let mut input = get_data_reader(args.data.as_deref())?;
+    let mut output = get_data_writer(args.output.as_deref())?;
 
-    let mut output: OutputMode;
+    let mut mode: OutputMode;
     if args.quiet {
-        output = OutputMode::Null(NullMessageFactory::new());
+        mode = OutputMode::Null(NullMessageFactory::new());
     } else if args.json {
-        output = OutputMode::Json(JsonMessageFactory::new());
+        mode = OutputMode::Json(JsonMessageFactory::new());
     } else {
-        output = OutputMode::Text(TextMessageFactory::new());
+        mode = OutputMode::Text(TextMessageFactory::new());
     }
 
     if args.packet {
-        read_all_packets(&mut decoder, &mut data, &mut output)?;
+        read_all_packets(&mut decoder, &mut input, &mut output, &mut mode)?;
     } else {
-        read_all_messages(&mut decoder, &mut data, &mut output)?;
+        read_all_messages(&mut decoder, &mut input, &mut output, &mut mode)?;
     }
     Ok(())
 }
 
-fn load_templates(templates: Option<&Path>) -> Result<Decoder> {
-    let templates = match templates {
-        None => {
-            info!("Using default templates...");
-            include_str!("../../templates.xml").to_string()
-        }
-        Some(path) => {
-            info!("Reading templates from {} ...", path.display());
-            String::from_utf8(std::fs::read(path)?)?
-        }
-    };
-    Ok(Decoder::new_from_xml(&templates)?)
-}
-
-fn get_data_reader(data: Option<&Path>) -> Result<Box<dyn BufRead>> {
-    match data {
-        None => {
-            info!("Reading data from stdin...");
-            Ok(Box::new(BufReader::new(stdin())))
-        }
-        Some(path) => {
-            info!("Reading data from {} ...", path.display());
-            Ok(Box::new(BufReader::new(File::open(path)?)))
-        }
-    }
-}
-
-fn read_all_packets(decoder: &mut Decoder, data: &mut dyn Read, output: &mut OutputMode) -> Result<()> {
+fn read_all_packets(decoder: &mut Decoder, data: &mut dyn Read, output: &mut dyn Write, mode: &mut OutputMode) -> Result<()> {
     let mut packet_count = 0u64;
     let mut message_count = 0u64;
     let start = SystemTime::now();
+
     'main: loop {
         let packet = match Packet::read(data)? {
             None => break 'main,
             Some(p) => p,
         };
-        match output {
+        match mode {
             OutputMode::Null(msg) => {
                 decoder.decode_vec(packet.payload, msg)?;
             }
             OutputMode::Text(msg) => {
                 decoder.decode_vec(packet.payload, msg)?;
-                println!("{}", &msg.text);
+                output.write_all(msg.text.as_bytes())?;
+                output.write_all(b"\n")?;
+                output.flush()?;
             }
             OutputMode::Json(msg) => {
                 decoder.decode_vec(packet.payload, msg)?;
-                println!("{}", &msg.json);
+                output.write_all(msg.json.as_bytes())?;
+                output.write_all(b"\n")?;
+                output.flush()?;
             }
         }
         packet_count += 1;
         message_count += 1;
     }
+
     let duration = start.elapsed()?;
     let usec_per_message = duration.as_micros() as f64 / message_count as f64;
     info!("{packet_count} packets ({message_count} messages) processed in {} ({usec_per_message:.2}us/msg)", format_duration(duration));
     Ok(())
 }
 
-fn read_all_messages(decoder: &mut Decoder, data: &mut dyn Read, output: &mut OutputMode) -> Result<()> {
+fn read_all_messages(decoder: &mut Decoder, data: &mut dyn Read, output: &mut dyn Write, mode: &mut OutputMode) -> Result<()> {
     let mut message_count = 0u64;
     let start = SystemTime::now();
+
     'main: loop {
-        let res = match output {
+        let res = match mode {
             OutputMode::Null(msg) => {
                 decoder.decode_stream(data, msg)
             }
@@ -155,17 +142,22 @@ fn read_all_messages(decoder: &mut Decoder, data: &mut dyn Read, output: &mut Ou
                 return Err(anyhow!(e))
             }
         }
-        match output {
+        match mode {
             OutputMode::Null(_) => {}
             OutputMode::Text(msg) => {
-                println!("{}", &msg.text);
+                output.write_all(msg.text.as_bytes())?;
+                output.write_all(b"\n")?;
+                output.flush()?;
             }
             OutputMode::Json(msg) => {
-                println!("{}", &msg.json);
+                output.write_all(msg.json.as_bytes())?;
+                output.write_all(b"\n")?;
+                output.flush()?;
             }
         }
         message_count += 1;
     }
+
     let duration = start.elapsed()?;
     let usec_per_message = duration.as_micros() as f64 / message_count as f64;
     info!("{message_count} messages processed in {} ({usec_per_message:.2}us/msg)", format_duration(duration));
