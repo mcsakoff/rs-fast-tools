@@ -11,15 +11,16 @@ use fast_tools::{get_data_reader, get_data_writer, load_templates};
 use fast_tools::packet::Packet;
 use fastlib::{Encoder, TextMessageVisitor};
 
+/// FAST (FIX Adapted for STreaming) protocol encoding tool
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, name = "fast-encode")]
 struct Args {
     /// XML file with template definitions
     #[arg(short, long, value_name = "TEMPLATES")]
     templates: Option<PathBuf>,
 
     /// Output file
-    #[arg(short, long, value_name = "BIN_DATA_FILE")]
+    #[arg(short, long, value_name = "BIN_DATA")]
     output: Option<PathBuf>,
 
     /// Write messages wrapped in packets

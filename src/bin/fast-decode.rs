@@ -12,15 +12,16 @@ use fast_tools::message::NullMessageFactory;
 use fast_tools::packet::Packet;
 use fastlib::{Decoder, Error, JsonMessageFactory, TextMessageFactory};
 
+/// FAST (FIX Adapted for STreaming) protocol decoding tool
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, name = "fast-decode")]
 struct Args {
     /// XML file with template definitions
     #[arg(short, long, value_name = "TEMPLATES")]
     templates: Option<PathBuf>,
 
     /// Output file
-    #[arg(short, long, value_name = "TEXT_DATA_FILE")]
+    #[arg(short, long, value_name = "TEXT_DATA")]
     output: Option<PathBuf>,
 
     /// Quiet mode; produce no message output
