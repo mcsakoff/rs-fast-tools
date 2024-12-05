@@ -12,7 +12,7 @@ repository = "https://github.com/mcsakoff/rs-fast-tools"
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4.5", features = ["derive"] }
-fastlib = { version = "0.3.1", default-features = false, features = [] }
+fastlib = { version = "0.3", default-features = false, features = [] }
 env_logger = "0.11"
 humantime = "2.1"
 log = "0.4"

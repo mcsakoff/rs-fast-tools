@@ -42,7 +42,7 @@ pub fn get_data_writer(output: Option<&Path>) -> Result<Box<dyn Write>> {
         }
         Some(path) => {
             info!("Writing data to {} ...", path.display());
-            Ok(Box::new(std::fs::File::create(path)?))
+            Ok(Box::new(File::create(path)?))
         }
     }
 }
