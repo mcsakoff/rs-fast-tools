@@ -38,9 +38,9 @@ fn main() -> Result<()> {
             .filter_or("LOG_LEVEL", "info")
             .write_style_or("LOG_STYLE", "always")
     );
-    encode(Args::parse()).or_else(|err| {
+    encode(Args::parse()).map_err(|err| {
         error!("{err}");
-        Err(anyhow!(err))
+        anyhow!(err)
     })
 }
 

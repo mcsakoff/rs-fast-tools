@@ -9,6 +9,12 @@ impl NullMessageFactory {
     }
 }
 
+impl Default for NullMessageFactory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MessageFactory for NullMessageFactory {
     fn start_template(&mut self, _id: u32, _name: &str) {}
     fn stop_template(&mut self) {}

@@ -9,7 +9,7 @@ pub mod message;
 pub mod packet;
 
 pub fn load_templates(templates: Option<&Path>) -> Result<String> {
-    return match templates {
+    match templates {
         None => {
             info!("Using default templates...");
             Ok(include_str!("../templates.xml").to_string())
@@ -18,7 +18,7 @@ pub fn load_templates(templates: Option<&Path>) -> Result<String> {
             info!("Reading templates from {} ...", path.display());
             Ok(String::from_utf8(std::fs::read(path)?)?)
         }
-    };
+    }
 }
 
 pub fn get_data_reader(input: Option<&Path>) -> Result<Box<dyn BufRead>> {

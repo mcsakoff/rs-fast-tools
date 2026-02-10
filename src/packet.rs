@@ -25,6 +25,7 @@ impl Packet {
         data.read_exact(&mut buffer)?;
         // read payload
         let mut payload = Vec::with_capacity(len as usize);
+        #[allow(clippy::uninit_vec)]
         unsafe {
             payload.set_len(len as usize);
         }
@@ -59,7 +60,7 @@ fn read_var_uint(input: &mut dyn Read) -> Result<Option<u64>> {
     let mut value: u64 = 0;
 
     let mut buffer = [0; 1];
-    if let Err(_) = input.read_exact(&mut buffer) {
+    if input.read_exact(&mut buffer).is_err() {
         // failed reading the first byte means we reached end of file
         return Ok(None);
     }
