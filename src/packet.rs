@@ -1,5 +1,5 @@
+use anyhow::{bail, Result};
 use std::io::{Read, Write};
-use anyhow::{Result, bail};
 
 #[derive(Debug)]
 pub struct Packet {
@@ -32,7 +32,10 @@ impl Packet {
         data.read_exact(&mut payload)?;
 
         Ok(Some(Packet {
-            seq_num: (buffer[0] as u32) << 24 | (buffer[1] as u32) << 16 | (buffer[2] as u32) << 8 | (buffer[3] as u32),
+            seq_num: (buffer[0] as u32) << 24
+                | (buffer[1] as u32) << 16
+                | (buffer[2] as u32) << 8
+                | (buffer[3] as u32),
             sub_channel: buffer[4],
             payload,
         }))
@@ -48,7 +51,7 @@ impl Packet {
             (self.seq_num >> 16) as u8,
             (self.seq_num >> 8) as u8,
             self.seq_num as u8,
-            self.sub_channel
+            self.sub_channel,
         ])?;
         // write payload
         output.write_all(&self.payload)?;

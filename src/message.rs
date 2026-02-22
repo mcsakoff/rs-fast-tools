@@ -1,7 +1,6 @@
 use fastlib::{MessageFactory, Value};
 
-pub struct NullMessageFactory {
-}
+pub struct NullMessageFactory {}
 
 impl NullMessageFactory {
     pub fn new() -> Self {

@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, stdin, Write};
+use std::io::{stdin, BufRead, BufReader, Write};
 use std::path::Path;
 
 use anyhow::Result;
