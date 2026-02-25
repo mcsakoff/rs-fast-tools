@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_truncation)]
+
 use std::fs::File;
 use std::io::{stdin, BufRead, BufReader, Write};
 use std::path::Path;
@@ -8,6 +10,9 @@ use log::info;
 pub mod message;
 pub mod packet;
 
+/// Load templates from a file or use default templates.
+/// # Errors
+/// Returns an error if the file cannot be read.
 pub fn load_templates(templates: Option<&Path>) -> Result<String> {
     match templates {
         None => {
@@ -21,6 +26,9 @@ pub fn load_templates(templates: Option<&Path>) -> Result<String> {
     }
 }
 
+/// Get a reader for the input file or stdin.
+/// # Errors
+/// Returns an error if the file cannot be read.
 pub fn get_data_reader(input: Option<&Path>) -> Result<Box<dyn BufRead>> {
     match input {
         None => {
@@ -34,6 +42,9 @@ pub fn get_data_reader(input: Option<&Path>) -> Result<Box<dyn BufRead>> {
     }
 }
 
+/// Get a writer for the output file or stdout.
+/// # Errors
+/// Returns an error if the file cannot be written.
 pub fn get_data_writer(output: Option<&Path>) -> Result<Box<dyn Write>> {
     match output {
         None => {

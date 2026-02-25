@@ -12,6 +12,7 @@ use fast_tools::{get_data_reader, get_data_writer, load_templates};
 use fastlib::{Encoder, TextMessageVisitor};
 
 /// FAST (FIX Adapted for STreaming) protocol encoding tool
+#[allow(clippy::doc_markdown)]
 #[derive(Parser)]
 #[command(author, version, name = "fast-encode")]
 struct Args {
@@ -38,13 +39,13 @@ fn main() -> Result<()> {
             .filter_or("LOG_LEVEL", "info")
             .write_style_or("LOG_STYLE", "always"),
     );
-    encode(Args::parse()).map_err(|err| {
+    encode(&Args::parse()).map_err(|err| {
         error!("{err}");
         anyhow!(err)
     })
 }
 
-fn encode(args: Args) -> Result<()> {
+fn encode(args: &Args) -> Result<()> {
     let mut encoder = Encoder::new_from_xml(&load_templates(args.templates.as_deref())?)?;
     let mut input = get_data_reader(args.data.as_deref())?;
     let mut output = get_data_writer(args.output.as_deref())?;
@@ -81,6 +82,7 @@ fn write_all_packets(
     }
 
     let duration = start.elapsed()?;
+    #[allow(clippy::cast_precision_loss)]
     let usec_per_message = duration.as_micros() as f64 / message_count as f64;
     info!("{packet_count} packets ({message_count} messages) processed in {} ({usec_per_message:.2}us/msg)", format_duration(duration));
     Ok(())
@@ -99,6 +101,7 @@ fn write_all_messages(
         message_count += 1;
     }
     let duration = start.elapsed()?;
+    #[allow(clippy::cast_precision_loss)]
     let usec_per_message = duration.as_micros() as f64 / message_count as f64;
     info!(
         "{message_count} messages processed in {} ({usec_per_message:.2}us/msg)",

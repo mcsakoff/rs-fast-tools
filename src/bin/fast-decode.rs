@@ -13,6 +13,7 @@ use fast_tools::{get_data_reader, get_data_writer, load_templates};
 use fastlib::{Decoder, Error, JsonMessageFactory, TextMessageFactory};
 
 /// FAST (FIX Adapted for STreaming) protocol decoding tool
+#[allow(clippy::doc_markdown)]
 #[derive(Parser)]
 #[command(author, version, name = "fast-decode")]
 struct Args {
@@ -47,7 +48,7 @@ fn main() -> Result<()> {
             .filter_or("LOG_LEVEL", "info")
             .write_style_or("LOG_STYLE", "always"),
     );
-    decode(Args::parse()).map_err(|err| {
+    decode(&Args::parse()).map_err(|err| {
         error!("{err}");
         anyhow!(err)
     })
@@ -59,7 +60,7 @@ enum OutputMode {
     Json(JsonMessageFactory),
 }
 
-fn decode(args: Args) -> Result<()> {
+fn decode(args: &Args) -> Result<()> {
     let mut decoder = Decoder::new_from_xml(&load_templates(args.templates.as_deref())?)?;
     let mut input = get_data_reader(args.data.as_deref())?;
     let mut output = get_data_writer(args.output.as_deref())?;
@@ -92,9 +93,8 @@ fn read_all_packets(
     let start = SystemTime::now();
 
     'main: loop {
-        let packet = match Packet::read(data)? {
-            None => break 'main,
-            Some(p) => p,
+        let Some(packet) = Packet::read(data)? else {
+            break 'main;
         };
         match mode {
             OutputMode::Null(msg) => {
@@ -118,6 +118,7 @@ fn read_all_packets(
     }
 
     let duration = start.elapsed()?;
+    #[allow(clippy::cast_precision_loss)]
     let usec_per_message = duration.as_micros() as f64 / message_count as f64;
     info!("{packet_count} packets ({message_count} messages) processed in {} ({usec_per_message:.2}us/msg)", format_duration(duration));
     Ok(())
@@ -139,10 +140,8 @@ fn read_all_messages(
             OutputMode::Json(msg) => decoder.decode_stream(data, msg),
         };
         match res {
-            Ok(_) => {}
-            Err(Error::Eof) => {
-                break 'main;
-            }
+            Ok(()) => {}
+            Err(Error::Eof) => break 'main,
             Err(e) => return Err(anyhow!(e)),
         }
         match mode {
@@ -162,6 +161,7 @@ fn read_all_messages(
     }
 
     let duration = start.elapsed()?;
+    #[allow(clippy::cast_precision_loss)]
     let usec_per_message = duration.as_micros() as f64 / message_count as f64;
     info!(
         "{message_count} messages processed in {} ({usec_per_message:.2}us/msg)",
