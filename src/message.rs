@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use fastlib::{MessageFactory, Value};
 
 pub struct NullMessageFactory {}
@@ -18,7 +19,7 @@ impl Default for NullMessageFactory {
 impl MessageFactory for NullMessageFactory {
     fn start_template(&mut self, _id: u32, _name: &str) {}
     fn stop_template(&mut self) {}
-    fn set_value(&mut self, _id: u32, _name: &str, _value: Option<Value>) {}
+    fn set_value(&mut self, _id: u32, _name: &str, _value: Option<Cow<'_, Value>>) {}
     fn start_sequence(&mut self, _id: u32, _name: &str, _length: u32) {}
     fn start_sequence_item(&mut self, _index: u32) {}
     fn stop_sequence_item(&mut self) {}

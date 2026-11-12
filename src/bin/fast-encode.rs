@@ -62,12 +62,11 @@ fn write_all_packets(
     input: &mut dyn BufRead,
     output: &mut dyn Write,
 ) -> Result<()> {
-    let mut seq_num = 1u32;
     let mut packet_count = 0u64;
     let mut message_count = 0u64;
     let start = SystemTime::now();
 
-    for line in input.lines() {
+    for (seq_num, line) in (1u32..).zip(input.lines()) {
         let mut message = TextMessageVisitor::from_text(&line?)?;
         let packet = Packet {
             seq_num,
@@ -76,7 +75,6 @@ fn write_all_packets(
         };
         packet.write(output)?;
 
-        seq_num += 1;
         packet_count += 1;
         message_count += 1;
     }
